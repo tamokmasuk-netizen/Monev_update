@@ -1,0 +1,981 @@
+
+import React, { useState, useMemo, useEffect } from 'react';
+import { 
+  LayoutDashboard, 
+  Table as TableIcon, 
+  BarChart3, 
+  Search, 
+  Filter, 
+  Download, 
+  AlertCircle,
+  FileText,
+  Info,
+  Menu,
+  X,
+  Sparkles,
+  PieChart as PieIcon,
+  ChevronUp,
+  ChevronDown,
+  ArrowUpDown,
+  CheckCircle2,
+  Bell,
+  Coins,
+  Calendar,
+  Building2,
+  Tag,
+  Hash,
+  TrendingUp,
+  SlidersHorizontal,
+  Wallet,
+  Package,
+  Trophy,
+  Boxes,
+  ClipboardList,
+  Layers,
+  Gavel,
+  Briefcase,
+  Calculator,
+  ListFilter,
+  ArrowRight
+} from 'lucide-react';
+import { INITIAL_DATA } from './constants';
+import { RUPData } from './types';
+import { formatCurrency } from './utils';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  PieChart, 
+  Pie, 
+  Cell,
+  Legend,
+  AreaChart,
+  Area
+} from 'recharts';
+import { GoogleGenAI } from "@google/genai";
+
+// Components
+const StatCard = ({ title, value, icon: Icon, color, subValue }: any) => (
+  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 h-full">
+    <div className={`p-3 rounded-xl ${color} shrink-0`}>
+      <Icon size={24} className="text-white" />
+    </div>
+    <div className="min-w-0">
+      <p className="text-sm font-medium text-slate-500 truncate" title={title}>{title}</p>
+      <h3 className="text-xl font-bold text-slate-900 truncate">{value}</h3>
+      {subValue && <p className="text-[10px] text-slate-400 font-semibold truncate mt-0.5">{subValue}</p>}
+    </div>
+  </div>
+);
+
+const DetailRow = ({ label, value, icon: Icon }: { label: string, value: string | number | boolean | undefined, icon: any }) => (
+  <div className="flex items-start gap-4 p-4 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors">
+    <div className="p-2 bg-slate-100 rounded-lg text-slate-500">
+      <Icon size={18} />
+    </div>
+    <div className="flex-1 min-w-0">
+      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{label}</p>
+      <p className="text-sm font-medium text-slate-800 break-words">
+        {value === undefined || value === null ? '-' : (typeof value === 'boolean' ? (value ? 'Aktif' : 'Tidak Aktif') : value)}
+      </p>
+    </div>
+  </div>
+);
+
+const SidePanel = ({ packet, onClose }: { packet: RUPData | null, onClose: () => void }) => {
+  if (!packet) return null;
+
+  return (
+    <>
+      <div 
+        className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60] transition-opacity animate-in fade-in duration-300"
+        onClick={onClose}
+      />
+      <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl z-[70] flex flex-col animate-in slide-in-from-right duration-500 ease-out">
+        <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0">
+          <div>
+            <h3 className="text-xl font-bold text-slate-900">Detail Paket RUP</h3>
+            <p className="text-xs text-slate-500 mt-1 font-mono">{packet.kd_rup}</p>
+          </div>
+          <button 
+            onClick={onClose}
+            className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-all"
+          >
+            <X size={24} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto pb-8">
+          <div className="p-6 bg-indigo-50/50 mb-4">
+            <div className="flex items-center gap-3 mb-4">
+              <span className={`px-3 py-1 rounded-full text-xs font-bold ${packet.status_aktif_rup ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                {packet.status_umumkan_rup}
+              </span>
+              <span className="text-xs font-medium text-indigo-600 bg-indigo-100 px-2 py-1 rounded">
+                T.A {packet.tahun_anggaran}
+              </span>
+              <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-1 rounded uppercase tracking-tighter">
+                RUP {packet.jenis_paket}
+              </span>
+            </div>
+            <div className="space-y-1 mb-4">
+              <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-[0.2em]">Nama Paket</p>
+              <h4 className="text-xl font-black text-slate-900 leading-tight">
+                {packet.nama_paket}
+              </h4>
+            </div>
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Satuan Kerja</p>
+              <h4 className="text-sm font-bold text-slate-700 leading-tight">
+                {packet.nama_satker}
+              </h4>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <h5 className="px-6 py-2 text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50 border-y border-slate-100">Informasi Teknis</h5>
+            <DetailRow label="Volume Pekerjaan" value={packet.volume_pekerjaan} icon={Boxes} />
+            <DetailRow label="Metode Pemilihan" value={packet.metode_pengadaan} icon={ClipboardList} />
+            <DetailRow label="Spesifikasi" value={packet.spesifikasi_pekerjaan} icon={FileText} />
+            <DetailRow label="Jenis Pengadaan" value={packet.jenis_pengadaan} icon={Tag} />
+            <DetailRow label="MAK" value={packet.mak} icon={Hash} />
+            
+            <h5 className="px-6 py-2 text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50 border-y border-slate-100 mt-4">Anggaran & Dana</h5>
+            <DetailRow label="Pagu Anggaran" value={formatCurrency(packet.pagu)} icon={Coins} />
+            <DetailRow label="Sumber Dana" value={packet.sumber_dana} icon={CheckCircle2} />
+            <DetailRow label="Asal Dana" value={packet.asal_dana} icon={CheckCircle2} />
+
+            <h5 className="px-6 py-2 text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50 border-y border-slate-100 mt-4">Identitas</h5>
+            <DetailRow label="Kode RUP" value={packet.kd_rup} icon={Tag} />
+            <DetailRow label="Satker String" value={packet.kd_satker_str} icon={Hash} />
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-slate-100 bg-slate-50 flex gap-3">
+          <button className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-100 flex items-center justify-center gap-2">
+            <Download size={18} />
+            Cetak Detail
+          </button>
+        </div>
+      </div>
+    </>
+  );
+};
+
+const Notification = ({ message, type, onClose }: { message: string, type: 'success' | 'info', onClose: () => void }) => {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 5000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className="fixed top-6 right-6 z-[100] animate-in slide-in-from-right duration-300">
+      <div className="bg-white border border-slate-100 shadow-2xl rounded-2xl p-4 pr-12 flex items-center gap-4 min-w-[320px]">
+        <div className={`p-2 rounded-full ${type === 'success' ? 'bg-emerald-100 text-emerald-600' : 'bg-indigo-100 text-indigo-600'}`}>
+          {type === 'success' ? <CheckCircle2 size={20} /> : <Bell size={20} />}
+        </div>
+        <div>
+          <h4 className="text-sm font-bold text-slate-900">Notifikasi</h4>
+          <p className="text-xs text-slate-500 font-medium">{message}</p>
+        </div>
+        <button 
+          onClick={onClose}
+          className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
+        >
+          <X size={16} />
+        </button>
+        <div className="absolute bottom-0 left-0 h-1 bg-indigo-500 rounded-full animate-shrink-width" style={{ width: '100%' }}></div>
+      </div>
+      <style>{`
+        @keyframes shrink {
+          from { width: 100%; }
+          to { width: 0%; }
+        }
+        .animate-shrink-width {
+          animation: shrink 5s linear forwards;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+const PENYEDIA_PIE_COLORS = ['#4338ca', '#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe'];
+const SWAKELOLA_PIE_COLORS = ['#d97706', '#f59e0b', '#fbbf24', '#fcd34d', '#fef3c7'];
+const MONTHS_ORDER = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+const App: React.FC = () => {
+  const [data] = useState<RUPData[]>(INITIAL_DATA);
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'table' | 'analysis'>('dashboard');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSatker, setSelectedSatker] = useState('All');
+  const [selectedJenisPaket, setSelectedJenisPaket] = useState('All');
+  const [selectedMetode, setSelectedMetode] = useState('All');
+  const [minPagu, setMinPagu] = useState<string>('');
+  const [maxPagu, setMaxPagu] = useState<string>('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [notification, setNotification] = useState<{ message: string, type: 'success' | 'info' } | null>(null);
+  const [selectedPacket, setSelectedPacket] = useState<RUPData | null>(null);
+  
+  // Sorting state
+  const [sortConfig, setSortConfig] = useState<{ key: keyof RUPData | null, direction: 'asc' | 'desc' | null }>({
+    key: null,
+    direction: null
+  });
+
+  // Derived data with filtering AND sorting
+  const filteredAndSortedData = useMemo(() => {
+    let result = data.filter(item => {
+      const matchesSearch = item.nama_satker.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          item.nama_paket.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          item.kd_rup.toString().includes(searchTerm);
+      const matchesSatker = selectedSatker === 'All' || item.nama_satker === selectedSatker;
+      const matchesJenisPaket = selectedJenisPaket === 'All' || item.jenis_paket === selectedJenisPaket;
+      const matchesMetode = selectedMetode === 'All' || item.metode_pengadaan === selectedMetode;
+      const matchesMinPagu = minPagu === '' || item.pagu >= Number(minPagu);
+      const matchesMaxPagu = maxPagu === '' || item.pagu <= Number(maxPagu);
+      
+      return matchesSearch && matchesSatker && matchesJenisPaket && matchesMetode && matchesMinPagu && matchesMaxPagu;
+    });
+
+    if (sortConfig.key && sortConfig.direction) {
+      result.sort((a, b) => {
+        const valA = a[sortConfig.key!];
+        const valB = b[sortConfig.key!];
+
+        if (valA === undefined || valA === null) return 1;
+        if (valB === undefined || valB === null) return -1;
+
+        if (typeof valA === 'number' && typeof valB === 'number') {
+          return sortConfig.direction === 'asc' ? valA - valB : valB - valA;
+        }
+        
+        const strA = String(valA).toLowerCase();
+        const strB = String(valB).toLowerCase();
+        
+        if (strA < strB) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (strA > strB) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [data, searchTerm, selectedSatker, selectedJenisPaket, selectedMetode, minPagu, maxPagu, sortConfig]);
+
+  const stats = useMemo(() => {
+    if (data.length === 0) return { 
+      totalPagu: 'Rp0', 
+      totalSwakelola: 'Rp0', 
+      totalPaket: 0, 
+      uniqueSatkers: 0, 
+      avgPagu: 'Rp0', 
+      avgPaguPenyedia: 'Rp0',
+      avgPaguSwakelola: 'Rp0',
+      maxPagu: 'Rp0', 
+      maxPaguSatker: '-' 
+    };
+    
+    const penyediaData = data.filter(i => i.jenis_paket === "Penyedia");
+    const swakelolaData = data.filter(i => i.jenis_paket === "Swakelola");
+
+    const totalPagu = data.reduce((sum, item) => sum + item.pagu, 0);
+    const totalSwakelola = swakelolaData.reduce((sum, item) => sum + item.pagu, 0);
+    const totalPenyedia = penyediaData.reduce((sum, item) => sum + item.pagu, 0);
+    
+    const avgPaguPenyedia = totalPenyedia / (penyediaData.length || 1);
+    const avgPaguSwakelola = totalSwakelola / (swakelolaData.length || 1);
+    const uniqueSatkers = new Set(data.map(item => item.kd_satker)).size;
+    
+    let maxItem = data[0];
+    data.forEach(item => {
+      if (item.pagu > maxItem.pagu) maxItem = item;
+    });
+
+    return {
+      totalPagu: formatCurrency(totalPagu),
+      totalSwakelola: formatCurrency(totalSwakelola),
+      totalPaket: data.length,
+      uniqueSatkers,
+      avgPagu: formatCurrency(totalPagu / (data.length || 1)),
+      avgPaguPenyedia: formatCurrency(avgPaguPenyedia),
+      avgPaguSwakelola: formatCurrency(avgPaguSwakelola),
+      maxPagu: formatCurrency(maxItem.pagu),
+      maxPaguSatker: maxItem.nama_satker
+    };
+  }, [data]);
+
+  const monthlyTrendData = useMemo(() => {
+    const trend: Record<string, { pagu: number, paket: number }> = {};
+    MONTHS_ORDER.forEach(m => trend[m] = { pagu: 0, paket: 0 });
+
+    data.forEach(item => {
+      if (trend[item.bulan_pengadaan]) {
+        trend[item.bulan_pengadaan].pagu += item.pagu;
+        trend[item.bulan_pengadaan].paket += 1;
+      }
+    });
+
+    return MONTHS_ORDER.map(month => ({
+      name: month,
+      pagu: trend[month].pagu,
+      paket: trend[month].paket
+    }));
+  }, [data]);
+
+  const getAsalDanaDistribution = (items: RUPData[]) => {
+    const distribution: Record<string, number> = {};
+    items.forEach(item => {
+      const label = item.asal_dana || 'Tidak Terdefinisi';
+      distribution[label] = (distribution[label] || 0) + item.pagu;
+    });
+    const total = Object.values(distribution).reduce((a, b) => a + b, 0);
+    return Object.entries(distribution).map(([name, value]) => ({
+      name,
+      value,
+      percentage: total > 0 ? ((value / total) * 100).toFixed(1) : '0'
+    }));
+  };
+
+  const asalDanaPenyediaData = useMemo(() => 
+    getAsalDanaDistribution(data.filter(i => i.jenis_paket === "Penyedia")), 
+  [data]);
+
+  const asalDanaSwakelolaData = useMemo(() => 
+    getAsalDanaDistribution(data.filter(i => i.jenis_paket === "Swakelola")), 
+  [data]);
+
+  const jenisPaketDistribution = useMemo(() => {
+    const dist: Record<string, number> = { "Penyedia": 0, "Swakelola": 0 };
+    data.forEach(item => {
+      if (dist[item.jenis_paket] !== undefined) {
+        dist[item.jenis_paket] += item.pagu;
+      }
+    });
+    return Object.entries(dist).map(([name, value]) => ({ name, value }));
+  }, [data]);
+
+  const metodePengadaanData = useMemo(() => {
+    const dist: Record<string, number> = {};
+    data.forEach(item => {
+      const method = item.metode_pengadaan || 'Lainnya';
+      dist[method] = (dist[method] || 0) + item.pagu;
+    });
+    return Object.entries(dist).map(([name, pagu]) => ({ name, pagu }))
+      .sort((a, b) => b.pagu - a.pagu);
+  }, [data]);
+
+  const jenisPengadaanData = useMemo(() => {
+    const dist: Record<string, number> = {};
+    data.forEach(item => {
+      const category = item.jenis_pengadaan || 'Lainnya';
+      dist[category] = (dist[category] || 0) + item.pagu;
+    });
+    return Object.entries(dist).map(([name, pagu]) => ({ name, pagu }))
+      .sort((a, b) => b.pagu - a.pagu);
+  }, [data]);
+
+  const swakelolaPackages = useMemo(() => {
+    return data.filter(item => item.jenis_paket === "Swakelola");
+  }, [data]);
+
+  const penyediaAnnouncedPackages = useMemo(() => {
+    return data.filter(item => 
+      item.jenis_paket === "Penyedia" && 
+      item.status_umumkan_rup === "Terumumkan"
+    );
+  }, [data]);
+
+  // Percentage summary of procurement types for announced provider packages
+  const announcedPenyediaCategoryStats = useMemo(() => {
+    const counts: Record<string, number> = {};
+    penyediaAnnouncedPackages.forEach(pkg => {
+      const cat = pkg.jenis_pengadaan || 'Lainnya';
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    const total = penyediaAnnouncedPackages.length;
+    return Object.entries(counts).map(([name, count]) => ({
+      name,
+      count,
+      percentage: total > 0 ? ((count / total) * 100).toFixed(1) : '0'
+    })).sort((a, b) => Number(b.percentage) - Number(a.percentage));
+  }, [penyediaAnnouncedPackages]);
+
+  // Percentage summary of procurement types for swakelola packages
+  const swakelolaCategoryStats = useMemo(() => {
+    const counts: Record<string, number> = {};
+    swakelolaPackages.forEach(pkg => {
+      const cat = pkg.jenis_pengadaan || 'Lainnya';
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    const total = swakelolaPackages.length;
+    return Object.entries(counts).map(([name, count]) => ({
+      name,
+      count,
+      percentage: total > 0 ? ((count / total) * 100).toFixed(1) : '0'
+    })).sort((a, b) => Number(b.percentage) - Number(a.percentage));
+  }, [swakelolaPackages]);
+
+  const satkerList = useMemo(() => ['All', ...Array.from(new Set(data.map(item => item.nama_satker)))], [data]);
+  const metodeList = useMemo(() => ['All', ...Array.from(new Set(data.map(item => item.metode_pengadaan).filter(Boolean)))], [data]);
+
+  const handleAiAnalysis = async () => {
+    setIsAnalyzing(true);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const prompt = `Analisa data RUP berikut dan berikan ringkasan eksekutif dalam Bahasa Indonesia. 
+      Fokus pada total anggaran, sebaran paket antar Satker, dan identifikasi paket dengan pagu tertinggi secara kritis. 
+      Gunakan format Markdown yang rapi.
+      
+      Data: ${JSON.stringify(data.map(d => ({ satker: d.nama_satker, pagu: d.pagu, paket: d.nama_paket, asal_dana: d.asal_dana })))}`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: prompt,
+      });
+
+      setAiAnalysis(response.text || "Tidak dapat menghasilkan analisis.");
+      setNotification({ message: "Analisis AI selesai dibuat.", type: 'info' });
+    } catch (error) {
+      setAiAnalysis("Terjadi kesalahan saat menghubungi asisten AI. Pastikan API Key tersedia.");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleUpdateData = () => {
+    setNotification({ message: "Data RUP berhasil disinkronisasi.", type: 'success' });
+  };
+
+  const handleSort = (key: keyof RUPData) => {
+    let direction: 'asc' | 'desc' | null = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    } else if (sortConfig.key === key && sortConfig.direction === 'desc') {
+      direction = null;
+    }
+    setSortConfig({ key: direction ? key : null, direction });
+  };
+
+  const SortIcon = ({ columnKey, isDark }: { columnKey: keyof RUPData, isDark?: boolean }) => {
+    if (sortConfig.key !== columnKey) return <ArrowUpDown size={14} className={isDark ? "text-slate-400" : "text-slate-300"} />;
+    if (sortConfig.direction === 'asc') return <ChevronUp size={14} className={isDark ? "text-indigo-400" : "text-indigo-600"} />;
+    return <ChevronDown size={14} className={isDark ? "text-indigo-400" : "text-indigo-600"} />;
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+      <SidePanel packet={selectedPacket} onClose={() => setSelectedPacket(null)} />
+      {notification && (
+        <Notification 
+          message={notification.message} 
+          type={notification.type} 
+          onClose={() => setNotification(null)} 
+        />
+      )}
+
+      <div className="md:hidden bg-indigo-700 text-white p-4 flex justify-between items-center sticky top-0 z-50">
+        <div className="flex items-center gap-2">
+          <LayoutDashboard size={24} />
+          <span className="font-bold tracking-tight">RUP MONITOR</span>
+        </div>
+        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+          {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </div>
+
+      <aside className={`fixed inset-y-0 left-0 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:static transition-transform duration-300 ease-in-out z-40 w-64 bg-white border-r border-slate-200 flex flex-col shadow-lg md:shadow-none`}>
+        <div className="p-6 hidden md:flex items-center gap-3 border-b border-slate-100">
+          <div className="bg-indigo-600 p-2 rounded-lg">
+            <LayoutDashboard size={20} className="text-white" />
+          </div>
+          <span className="font-bold text-xl text-slate-800 tracking-tight">RUP Monitor</span>
+        </div>
+
+        <nav className="flex-1 p-4 space-y-2">
+          <button 
+            onClick={() => { setActiveTab('dashboard'); setIsSidebarOpen(false); }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'dashboard' ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}
+          >
+            <LayoutDashboard size={20} />
+            Ringkasan
+          </button>
+          <button 
+            onClick={() => { setActiveTab('table'); setIsSidebarOpen(false); }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'table' ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}
+          >
+            <TableIcon size={20} />
+            Data Detail
+          </button>
+          <button 
+            onClick={() => { setActiveTab('analysis'); setIsSidebarOpen(false); }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'analysis' ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}
+          >
+            <Sparkles size={20} />
+            Analisis AI
+          </button>
+        </nav>
+
+        <div className="p-4 mt-auto">
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+            <div className="flex items-center gap-2 mb-2">
+              <Info size={16} className="text-slate-400" />
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Info Sistem</span>
+            </div>
+            <p className="text-xs text-slate-600">Versi 1.2.0-Alpha</p>
+            <p className="text-xs text-slate-400 mt-1">TA 2026 - Muko Muko</p>
+          </div>
+        </div>
+      </aside>
+
+      <main className="flex-1 overflow-auto">
+        <header className="bg-white border-b border-slate-200 px-8 py-4 hidden md:flex justify-between items-center sticky top-0 z-10">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">
+              {activeTab === 'dashboard' ? 'Dashboard Monitoring' : activeTab === 'table' ? 'Tabel Data RUP' : 'Analisis Cerdas'}
+            </h1>
+            <p className="text-sm text-slate-500">Pemantauan Rencana Umum Pengadaan Kabupaten Muko Muko</p>
+          </div>
+          <div className="flex gap-3">
+            <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
+              <Download size={18} />
+              Export
+            </button>
+            <button 
+              onClick={handleUpdateData}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200"
+            >
+              Update Data
+            </button>
+          </div>
+        </header>
+
+        <div className="p-4 md:p-8 space-y-6">
+          {activeTab === 'dashboard' && (
+            <>
+              {/* Stats Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4 md:gap-4">
+                <div className="xl:col-span-2 lg:col-span-2 sm:col-span-2">
+                  <StatCard title="Total Pagu (Semua)" value={stats.totalPagu} icon={BarChart3} color="bg-indigo-600" />
+                </div>
+                <StatCard title="Total Swakelola" value={stats.totalSwakelola} icon={Briefcase} color="bg-amber-500" />
+                <StatCard title="Total Paket" value={stats.totalPaket} icon={FileText} color="bg-blue-500" />
+                <StatCard title="Rata-rata Penyedia" value={stats.avgPaguPenyedia} icon={Package} color="bg-indigo-400" />
+                <StatCard title="Rata-rata Swakelola" value={stats.avgPaguSwakelola} icon={Calculator} color="bg-amber-400" />
+                <StatCard title="Jumlah Satker" value={stats.uniqueSatkers} icon={TableIcon} color="bg-emerald-500" />
+                <StatCard title="Pagu Tertinggi" value={stats.maxPagu} subValue={stats.maxPaguSatker} icon={Trophy} color="bg-rose-500" />
+              </div>
+
+              {/* Jenis Pengadaan Summary Chart */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                  <h3 className="text-lg font-bold mb-6 text-slate-800 flex items-center gap-2">
+                    <ListFilter size={20} className="text-indigo-600" />
+                    Ringkasan Pagu per Jenis Pengadaan
+                  </h3>
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={jenisPengadaanData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis dataKey="name" fontSize={12} axisLine={false} tickLine={false} />
+                        <YAxis tickFormatter={(val) => `Rp${val/1000000}jt`} fontSize={10} axisLine={false} tickLine={false} />
+                        <Tooltip 
+                          formatter={(value: number) => formatCurrency(value)}
+                          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                        />
+                        <Bar dataKey="pagu" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={40} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+                  <h3 className="text-lg font-bold mb-6 text-slate-800 flex items-center gap-2">
+                    <CheckCircle2 size={20} className="text-emerald-600" />
+                    Persentase Jenis Pengadaan (Penyedia)
+                  </h3>
+                  <div className="flex-1 flex flex-col justify-center space-y-6">
+                    {announcedPenyediaCategoryStats.length > 0 ? announcedPenyediaCategoryStats.map((item, index) => (
+                      <div key={item.name} className="space-y-2">
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="font-bold text-slate-700">{item.name}</span>
+                          <span className="font-black text-indigo-600">{item.percentage}%</span>
+                        </div>
+                        <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                          <div 
+                            className="bg-indigo-500 h-full rounded-full transition-all duration-700 ease-out" 
+                            style={{ width: `${item.percentage}%` }}
+                          ></div>
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{item.count} Paket Terumumkan</p>
+                      </div>
+                    )) : (
+                      <div className="text-center py-12 flex flex-col items-center gap-3">
+                         <div className="p-3 bg-slate-50 rounded-full text-slate-300">
+                           <AlertCircle size={24} />
+                         </div>
+                         <p className="text-sm font-medium text-slate-400 italic">Data belum tersedia</p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-slate-100 text-center">
+                    <button onClick={() => setActiveTab('table')} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 mx-auto transition-colors">
+                      Lihat Semua Data <ChevronDown size={14} className="-rotate-90" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tren Pengadaan Bulanan */}
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <TrendingUp size={20} className="text-indigo-600" />
+                    Tren Pengadaan Bulanan
+                  </h3>
+                  <div className="flex items-center gap-4 text-xs font-medium text-slate-400">
+                     <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-indigo-500"></div>Pagu</div>
+                     <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-slate-300"></div>Trend</div>
+                  </div>
+                </div>
+                <div className="h-80 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={monthlyTrendData} margin={{ top: 10, right: 30, left: 20, bottom: 5 }}>
+                      <defs>
+                        <linearGradient id="colorPagu" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
+                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} tickFormatter={(val) => val.substring(0, 3)} />
+                      <YAxis tickFormatter={(val) => `Rp${val/1000000}jt`} fontSize={10} axisLine={false} tickLine={false} />
+                      <Tooltip 
+                        formatter={(value: number, name: string) => [name === 'Pagu Anggaran' ? formatCurrency(value) : value, name === 'Pagu Anggaran' ? 'Total Pagu' : 'Jumlah Paket']}
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                      />
+                      <Area type="monotone" dataKey="pagu" name="Pagu Anggaran" stroke="#4f46e5" strokeWidth={3} fillOpacity={1} fill="url(#colorPagu)" />
+                      <Legend verticalAlign="top" align="right" height={36}/>
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* NEW SECTION: Wawasan Anggaran Swakelola - Summarized by procurement type percentage */}
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-amber-500 rounded-lg text-white">
+                      <Briefcase size={20} />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-800">Persentase Jenis Pengadaan (Swakelola)</h3>
+                  </div>
+                  <span className="text-xs font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-100">
+                    {swakelolaPackages.length} Paket Swakelola
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
+                  {swakelolaCategoryStats.length > 0 ? swakelolaCategoryStats.map((item, index) => (
+                    <div key={item.name} className="p-5 rounded-2xl bg-amber-50/30 border border-amber-100/50 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <Tag size={16} className="text-amber-600" />
+                          <span className="text-sm font-bold text-slate-700">{item.name}</span>
+                        </div>
+                        <span className="text-lg font-black text-amber-600">{item.percentage}%</span>
+                      </div>
+                      <div className="w-full bg-amber-100/50 rounded-full h-3 overflow-hidden">
+                        <div 
+                          className="bg-amber-500 h-full rounded-full transition-all duration-700 ease-out shadow-sm" 
+                          style={{ width: `${item.percentage}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        <span>Kontribusi Pengadaan</span>
+                        <span className="text-amber-700">{item.count} Paket</span>
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="col-span-full py-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+                      <AlertCircle size={32} className="text-slate-300 mx-auto mb-3" />
+                      <p className="text-sm font-medium text-slate-500">Belum ada data anggaran Swakelola yang tersedia.</p>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-4 pt-4 border-t border-slate-100 text-center">
+                    <button onClick={() => { setActiveTab('table'); setSelectedJenisPaket('Swakelola'); }} className="text-xs font-bold text-amber-600 hover:text-amber-800 flex items-center gap-1 mx-auto transition-colors">
+                      Eksplorasi Data Swakelola <ChevronDown size={14} className="-rotate-90" />
+                    </button>
+                </div>
+              </div>
+
+              {/* Pagu Distribution Charts */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                  <h3 className="text-lg font-bold mb-6 text-slate-800 flex items-center gap-2">
+                    <Layers size={20} className="text-amber-500" />
+                    Pagu per Jenis Paket
+                  </h3>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={jenisPaketDistribution} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                          {jenisPaketDistribution.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={index === 0 ? '#4f46e5' : '#f59e0b'} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    {jenisPaketDistribution.map((item, index) => (
+                      <div key={item.name} className={`flex justify-between items-center p-3 rounded-lg ${index === 0 ? 'bg-indigo-50 text-indigo-700' : 'bg-amber-50 text-amber-700'}`}>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-3 h-3 rounded-full ${index === 0 ? 'bg-indigo-500' : 'bg-amber-500'}`}></div>
+                          {index === 0 ? <Package size={16} className="text-indigo-600" /> : <Briefcase size={16} className="text-amber-600" />}
+                          <span className="text-sm font-medium">{item.name}</span>
+                        </div>
+                        <span className="font-bold">{formatCurrency(item.value)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                  <h3 className="text-lg font-bold mb-6 text-slate-800 flex items-center gap-2">
+                    <Gavel size={20} className="text-rose-500" />
+                    Pagu per Metode Pengadaan
+                  </h3>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={metodePengadaanData} layout="vertical" margin={{ left: 20, right: 40, top: 10, bottom: 10 }}>
+                        <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
+                        <XAxis type="number" hide />
+                        <YAxis type="category" dataKey="name" fontSize={10} axisLine={false} tickLine={false} width={120} />
+                        <Tooltip 
+                          formatter={(value: number) => formatCurrency(value)}
+                          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                          cursor={{ fill: '#f8fafc' }}
+                        />
+                        <Bar dataKey="pagu" fill="#f43f5e" radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+
+              {/* COMPARATIVE FUND SOURCE DISTRIBUTION */}
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <PieIcon size={20} className="text-emerald-600" />
+                    Distribusi Asal Anggaran Sementara: Penyedia vs Swakelola
+                  </h3>
+                  <div className="hidden sm:flex items-center gap-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-indigo-500"></div>Penyedia</div>
+                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-amber-500"></div>Swakelola</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                  {/* Penyedia Fund Source */}
+                  <div className="relative">
+                    <div className="absolute top-0 left-0 bg-indigo-50 text-indigo-700 text-[10px] font-black px-2 py-0.5 rounded-md border border-indigo-100">PENYEDIA</div>
+                    <div className="h-64 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie 
+                            data={asalDanaPenyediaData} 
+                            cx="50%" cy="50%" 
+                            labelLine={true} 
+                            label={({ percentage }: any) => `${percentage}%`} 
+                            outerRadius={80} 
+                            dataKey="value"
+                          >
+                            {asalDanaPenyediaData.map((entry, index) => (
+                              <Cell key={`cell-p-${index}`} fill={PENYEDIA_PIE_COLORS[index % PENYEDIA_PIE_COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mt-4">
+                      {asalDanaPenyediaData.map((item, index) => (
+                        <div key={item.name} className="flex flex-col p-2 rounded-lg border border-slate-50 bg-slate-50/50">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: PENYEDIA_PIE_COLORS[index % PENYEDIA_PIE_COLORS.length] }}></div>
+                            <span className="text-[10px] font-bold text-slate-600 truncate">{item.name}</span>
+                          </div>
+                          <div className="flex justify-between items-baseline">
+                            <span className="text-[10px] font-black text-slate-900">{item.percentage}%</span>
+                            <span className="text-[9px] text-slate-400">{formatCurrency(item.value)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Swakelola Fund Source */}
+                  <div className="relative">
+                    <div className="absolute top-0 left-0 bg-amber-50 text-amber-700 text-[10px] font-black px-2 py-0.5 rounded-md border border-amber-100">SWAKELOLA</div>
+                    <div className="h-64 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie 
+                            data={asalDanaSwakelolaData} 
+                            cx="50%" cy="50%" 
+                            labelLine={true} 
+                            label={({ percentage }: any) => `${percentage}%`} 
+                            outerRadius={80} 
+                            dataKey="value"
+                          >
+                            {asalDanaSwakelolaData.map((entry, index) => (
+                              <Cell key={`cell-s-${index}`} fill={SWAKELOLA_PIE_COLORS[index % SWAKELOLA_PIE_COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mt-4">
+                      {asalDanaSwakelolaData.map((item, index) => (
+                        <div key={item.name} className="flex flex-col p-2 rounded-lg border border-slate-50 bg-slate-50/50">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: SWAKELOLA_PIE_COLORS[index % SWAKELOLA_PIE_COLORS.length] }}></div>
+                            <span className="text-[10px] font-bold text-slate-600 truncate">{item.name}</span>
+                          </div>
+                          <div className="flex justify-between items-baseline">
+                            <span className="text-[10px] font-black text-slate-900">{item.percentage}%</span>
+                            <span className="text-[9px] text-slate-400">{formatCurrency(item.value)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'table' && (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col max-h-[calc(100vh-12rem)]">
+              <div className="p-6 border-b border-slate-100 flex flex-col space-y-4 bg-white sticky top-0 z-30">
+                <div className="flex flex-col lg:flex-row gap-4 justify-between items-center">
+                  <div className="relative w-full lg:w-96">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input type="text" placeholder="Cari Nama Paket, Satker, atau Kode RUP..." className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                      <Building2 className="text-slate-400" size={18} />
+                      <select className="flex-1 lg:w-64 bg-slate-50 border border-slate-200 py-2 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" value={selectedSatker} onChange={(e) => setSelectedSatker(e.target.value)}>
+                        {satkerList.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                      <Package className="text-slate-400" size={18} />
+                      <select className="flex-1 lg:w-48 bg-slate-50 border border-slate-200 py-2 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" value={selectedJenisPaket} onChange={(e) => setSelectedJenisPaket(e.target.value)}>
+                        <option value="All">Semua Jenis Paket</option>
+                        <option value="Penyedia">Penyedia</option>
+                        <option value="Swakelola">Swakelola</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                      <Gavel className="text-slate-400" size={18} />
+                      <select className="flex-1 lg:w-48 bg-slate-50 border border-slate-200 py-2 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" value={selectedMetode} onChange={(e) => setSelectedMetode(e.target.value)}>
+                        {metodeList.map(m => <option key={m} value={m}>{m === 'All' ? 'Semua Metode' : m}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="overflow-auto relative">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-slate-800 text-white sticky top-0 z-20 shadow-sm">
+                    <tr>
+                      <th className="px-6 py-5 text-xs font-bold uppercase tracking-wider cursor-pointer hover:bg-slate-700 transition-colors border-b border-slate-700" onClick={() => handleSort('kd_rup')}>
+                        <div className="flex items-center gap-2">Kode RUP <SortIcon columnKey="kd_rup" isDark /></div>
+                      </th>
+                      <th className="px-6 py-5 text-xs font-bold uppercase tracking-wider cursor-pointer hover:bg-slate-700 transition-colors border-b border-slate-700" onClick={() => handleSort('nama_paket')}>
+                        <div className="flex items-center gap-2">Nama Paket <SortIcon columnKey="nama_paket" isDark /></div>
+                      </th>
+                      <th className="px-6 py-5 text-xs font-bold uppercase tracking-wider cursor-pointer hover:bg-slate-700 transition-colors border-b border-slate-700" onClick={() => handleSort('nama_satker')}>
+                        <div className="flex items-center gap-2">Satuan Kerja <SortIcon columnKey="nama_satker" isDark /></div>
+                      </th>
+                      <th className="px-6 py-5 text-xs font-bold uppercase tracking-wider cursor-pointer hover:bg-slate-700 transition-colors border-b border-slate-700" onClick={() => handleSort('pagu')}>
+                        <div className="flex items-center gap-2">Pagu <SortIcon columnKey="pagu" isDark /></div>
+                      </th>
+                      <th className="px-6 py-5 text-xs font-bold uppercase tracking-wider cursor-pointer hover:bg-slate-700 transition-colors border-b border-slate-700" onClick={() => handleSort('metode_pengadaan')}>
+                        <div className="flex items-center gap-2">Metode <SortIcon columnKey="metode_pengadaan" isDark /></div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 bg-white">
+                    {filteredAndSortedData.map((item, index) => (
+                      <tr 
+                        key={item.kd_rup} 
+                        className={`hover:bg-indigo-50/80 transition-all group cursor-pointer border-l-4 border-l-transparent hover:border-l-indigo-500 ${index % 2 === 1 ? 'bg-slate-50/60' : 'bg-white'}`} 
+                        onClick={() => setSelectedPacket(item)}
+                      >
+                        <td className="px-6 py-6">
+                          <span className="font-mono text-[10px] font-bold text-slate-500 bg-slate-100 group-hover:bg-indigo-100 group-hover:text-indigo-600 px-2 py-1 rounded transition-colors">{item.kd_rup}</span>
+                        </td>
+                        <td className="px-6 py-6">
+                          <p className="text-sm font-bold text-slate-800 group-hover:text-indigo-700 transition-colors line-clamp-2">{item.nama_paket}</p>
+                          <p className="text-[10px] text-slate-400 font-mono mt-1">{item.kd_satker_str}</p>
+                        </td>
+                        <td className="px-6 py-6"><p className="text-xs font-semibold text-slate-600">{item.nama_satker}</p></td>
+                        <td className="px-6 py-6"><span className="text-sm font-extrabold text-indigo-700">{formatCurrency(item.pagu)}</span></td>
+                        <td className="px-6 py-6">
+                          <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase border ${item.jenis_paket === 'Swakelola' ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                            {item.metode_pengadaan}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'analysis' && (
+            <div className="space-y-6">
+              <div className="bg-gradient-to-br from-indigo-600 to-violet-700 p-8 rounded-2xl text-white shadow-xl">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-white/20 rounded-lg"><Sparkles className="text-white" /></div>
+                  <h2 className="text-2xl font-bold">Wawasan Cerdas (AI Insights)</h2>
+                </div>
+                <p className="text-indigo-100 max-w-2xl mb-6">Analisis pintar khusus untuk paket Penyedia & Swakelola di Kabupaten Muko Muko.</p>
+                <button onClick={handleAiAnalysis} disabled={isAnalyzing} className="bg-white text-indigo-700 font-bold px-6 py-3 rounded-xl hover:bg-indigo-50 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                  {isAnalyzing ? 'Menganalisis...' : 'Mulai Analisis Sekarang'}
+                  {!isAnalyzing && <Sparkles size={18} />}
+                </button>
+              </div>
+              {aiAnalysis && (
+                <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 animate-in fade-in duration-500">
+                   <div className="prose prose-slate max-w-none">
+                      <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-lg font-bold text-slate-800">Hasil Analisis Strategis</h3>
+                        <button onClick={() => setAiAnalysis(null)} className="text-slate-400 hover:text-slate-600">Hapus</button>
+                      </div>
+                      <div className="text-slate-700 leading-relaxed whitespace-pre-wrap">{aiAnalysis}</div>
+                   </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default App;
