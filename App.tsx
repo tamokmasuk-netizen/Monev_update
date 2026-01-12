@@ -724,7 +724,14 @@ const App: React.FC = () => {
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
-                        <Pie data={jenisPaketDistribution} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                        <Pie 
+                          data={jenisPaketDistribution} 
+                          innerRadius={60} 
+                          outerRadius={80} 
+                          paddingAngle={5} 
+                          dataKey="value"
+                          label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                        >
                           {jenisPaketDistribution.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={index === 0 ? '#4f46e5' : '#f59e0b'} />
                           ))}
@@ -865,8 +872,8 @@ const App: React.FC = () => {
           )}
 
           {activeTab === 'table' && (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col max-h-[calc(100vh-12rem)]">
-              <div className="p-6 border-b border-slate-100 flex flex-col space-y-4 bg-white sticky top-0 z-30">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col h-[calc(100vh-14rem)]">
+              <div className="p-6 border-b border-slate-100 flex flex-col space-y-4 bg-white z-30">
                 <div className="flex flex-col lg:flex-row gap-4 justify-between items-center">
                   <div className="relative w-full lg:w-96">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -896,45 +903,49 @@ const App: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="overflow-auto relative">
-                <table className="w-full text-left border-collapse">
-                  <thead className="bg-slate-800 text-white sticky top-0 z-20 shadow-sm">
+              <div className="flex-1 overflow-auto relative custom-scrollbar">
+                <table className="w-full text-left border-separate border-spacing-0">
+                  <thead className="bg-slate-800 text-white sticky top-0 z-20 shadow-md">
                     <tr>
-                      <th className="px-6 py-5 text-xs font-bold uppercase tracking-wider cursor-pointer hover:bg-slate-700 transition-colors border-b border-slate-700" onClick={() => handleSort('kd_rup')}>
+                      <th className="px-8 py-6 text-xs font-bold uppercase tracking-wider cursor-pointer hover:bg-slate-700 transition-colors border-b border-slate-700 first:rounded-tl-none last:rounded-tr-none" onClick={() => handleSort('kd_rup')}>
                         <div className="flex items-center gap-2">Kode RUP <SortIcon columnKey="kd_rup" isDark /></div>
                       </th>
-                      <th className="px-6 py-5 text-xs font-bold uppercase tracking-wider cursor-pointer hover:bg-slate-700 transition-colors border-b border-slate-700" onClick={() => handleSort('nama_paket')}>
+                      <th className="px-8 py-6 text-xs font-bold uppercase tracking-wider cursor-pointer hover:bg-slate-700 transition-colors border-b border-slate-700" onClick={() => handleSort('nama_paket')}>
                         <div className="flex items-center gap-2">Nama Paket <SortIcon columnKey="nama_paket" isDark /></div>
                       </th>
-                      <th className="px-6 py-5 text-xs font-bold uppercase tracking-wider cursor-pointer hover:bg-slate-700 transition-colors border-b border-slate-700" onClick={() => handleSort('nama_satker')}>
+                      <th className="px-8 py-6 text-xs font-bold uppercase tracking-wider cursor-pointer hover:bg-slate-700 transition-colors border-b border-slate-700" onClick={() => handleSort('nama_satker')}>
                         <div className="flex items-center gap-2">Satuan Kerja <SortIcon columnKey="nama_satker" isDark /></div>
                       </th>
-                      <th className="px-6 py-5 text-xs font-bold uppercase tracking-wider cursor-pointer hover:bg-slate-700 transition-colors border-b border-slate-700" onClick={() => handleSort('pagu')}>
+                      <th className="px-8 py-6 text-xs font-bold uppercase tracking-wider cursor-pointer hover:bg-slate-700 transition-colors border-b border-slate-700" onClick={() => handleSort('pagu')}>
                         <div className="flex items-center gap-2">Pagu <SortIcon columnKey="pagu" isDark /></div>
                       </th>
-                      <th className="px-6 py-5 text-xs font-bold uppercase tracking-wider cursor-pointer hover:bg-slate-700 transition-colors border-b border-slate-700" onClick={() => handleSort('metode_pengadaan')}>
+                      <th className="px-8 py-6 text-xs font-bold uppercase tracking-wider cursor-pointer hover:bg-slate-700 transition-colors border-b border-slate-700" onClick={() => handleSort('metode_pengadaan')}>
                         <div className="flex items-center gap-2">Metode <SortIcon columnKey="metode_pengadaan" isDark /></div>
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200 bg-white">
+                  <tbody className="bg-white">
                     {filteredAndSortedData.map((item, index) => (
                       <tr 
                         key={item.kd_rup} 
-                        className={`hover:bg-indigo-50/80 transition-all group cursor-pointer border-l-4 border-l-transparent hover:border-l-indigo-500 ${index % 2 === 1 ? 'bg-slate-50/60' : 'bg-white'}`} 
+                        className={`hover:bg-indigo-50/90 transition-all group cursor-pointer border-l-4 border-l-transparent hover:border-l-indigo-600 ${index % 2 === 1 ? 'bg-slate-50' : 'bg-white'}`} 
                         onClick={() => setSelectedPacket(item)}
                       >
-                        <td className="px-6 py-6">
-                          <span className="font-mono text-[10px] font-bold text-slate-500 bg-slate-100 group-hover:bg-indigo-100 group-hover:text-indigo-600 px-2 py-1 rounded transition-colors">{item.kd_rup}</span>
+                        <td className="px-8 py-7 border-b border-slate-100">
+                          <span className="font-mono text-[11px] font-bold text-slate-500 bg-slate-200 group-hover:bg-indigo-200 group-hover:text-indigo-700 px-3 py-1.5 rounded-lg transition-colors">{item.kd_rup}</span>
                         </td>
-                        <td className="px-6 py-6">
-                          <p className="text-sm font-bold text-slate-800 group-hover:text-indigo-700 transition-colors line-clamp-2">{item.nama_paket}</p>
-                          <p className="text-[10px] text-slate-400 font-mono mt-1">{item.kd_satker_str}</p>
+                        <td className="px-8 py-7 border-b border-slate-100">
+                          <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-800 transition-colors line-clamp-2 max-w-md">{item.nama_paket}</p>
+                          <p className="text-[10px] text-slate-400 font-mono mt-1.5">{item.kd_satker_str}</p>
                         </td>
-                        <td className="px-6 py-6"><p className="text-xs font-semibold text-slate-600">{item.nama_satker}</p></td>
-                        <td className="px-6 py-6"><span className="text-sm font-extrabold text-indigo-700">{formatCurrency(item.pagu)}</span></td>
-                        <td className="px-6 py-6">
-                          <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase border ${item.jenis_paket === 'Swakelola' ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                        <td className="px-8 py-7 border-b border-slate-100">
+                          <p className="text-xs font-semibold text-slate-600 leading-relaxed">{item.nama_satker}</p>
+                        </td>
+                        <td className="px-8 py-7 border-b border-slate-100">
+                          <span className="text-sm font-black text-indigo-700 bg-indigo-50/50 px-3 py-1 rounded-md">{formatCurrency(item.pagu)}</span>
+                        </td>
+                        <td className="px-8 py-7 border-b border-slate-100">
+                          <span className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase border tracking-widest ${item.jenis_paket === 'Swakelola' ? 'bg-amber-100 text-amber-700 border-amber-200 shadow-sm shadow-amber-100' : 'bg-slate-100 text-slate-600 border-slate-200 shadow-sm'}`}>
                             {item.metode_pengadaan}
                           </span>
                         </td>
