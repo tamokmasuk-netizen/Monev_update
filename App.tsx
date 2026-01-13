@@ -383,27 +383,24 @@ const App: React.FC = () => {
     return data.filter(item => item.jenis_paket === "Swakelola");
   }, [data]);
 
-  const penyediaAnnouncedPackages = useMemo(() => {
-    return data.filter(item => 
-      item.jenis_paket === "Penyedia" && 
-      item.status_umumkan_rup === "Terumumkan"
-    );
+  const penyediaPackages = useMemo(() => {
+    return data.filter(item => item.jenis_paket === "Penyedia");
   }, [data]);
 
-  // Percentage summary of procurement types for announced provider packages
-  const announcedPenyediaCategoryStats = useMemo(() => {
+  // Percentage summary of procurement types for provider packages
+  const penyediaCategoryStats = useMemo(() => {
     const counts: Record<string, number> = {};
-    penyediaAnnouncedPackages.forEach(pkg => {
+    penyediaPackages.forEach(pkg => {
       const cat = pkg.jenis_pengadaan || 'Lainnya';
       counts[cat] = (counts[cat] || 0) + 1;
     });
-    const total = penyediaAnnouncedPackages.length;
+    const total = penyediaPackages.length;
     return Object.entries(counts).map(([name, count]) => ({
       name,
       count,
       percentage: total > 0 ? ((count / total) * 100).toFixed(1) : '0'
     })).sort((a, b) => Number(b.percentage) - Number(a.percentage));
-  }, [penyediaAnnouncedPackages]);
+  }, [penyediaPackages]);
 
   // Percentage summary of procurement types for swakelola packages
   const swakelolaCategoryStats = useMemo(() => {
@@ -570,36 +567,24 @@ const App: React.FC = () => {
                 <StatCard title="Pagu Tertinggi" value={stats.maxPagu} subValue={stats.maxPaguSatker} icon={Trophy} color="bg-rose-500" />
               </div>
 
-              {/* Jenis Pengadaan Summary Chart */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                  <h3 className="text-lg font-bold mb-6 text-slate-800 flex items-center gap-2">
-                    <ListFilter size={20} className="text-indigo-600" />
-                    Ringkasan Pagu per Jenis Pengadaan
-                  </h3>
-                  <div className="h-72">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={jenisPengadaanData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="name" fontSize={12} axisLine={false} tickLine={false} />
-                        <YAxis tickFormatter={(val) => `Rp${val/1000000}jt`} fontSize={10} axisLine={false} tickLine={false} />
-                        <Tooltip 
-                          formatter={(value: number) => formatCurrency(value)}
-                          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                        />
-                        <Bar dataKey="pagu" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={40} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
+              {/* Grouped PROCUREMENT TYPE Distribution (Side-by-Side) */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* PENYEDIA Group */}
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
-                  <h3 className="text-lg font-bold mb-6 text-slate-800 flex items-center gap-2">
-                    <CheckCircle2 size={20} className="text-emerald-600" />
-                    Persentase Jenis Pengadaan (Penyedia)
-                  </h3>
-                  <div className="flex-1 flex flex-col justify-center space-y-6">
-                    {announcedPenyediaCategoryStats.length > 0 ? announcedPenyediaCategoryStats.map((item, index) => (
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-indigo-600 rounded-lg text-white">
+                        <Package size={20} />
+                      </div>
+                      <h3 className="text-lg font-bold text-slate-800">Distribusi Jenis Pengadaan (Penyedia)</h3>
+                    </div>
+                    <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+                      {penyediaPackages.length} Paket Penyedia
+                    </span>
+                  </div>
+                  
+                  <div className="flex-1 space-y-6">
+                    {penyediaCategoryStats.length > 0 ? penyediaCategoryStats.map((item) => (
                       <div key={item.name} className="space-y-2">
                         <div className="flex justify-between items-center text-sm">
                           <span className="font-bold text-slate-700">{item.name}</span>
@@ -611,22 +596,85 @@ const App: React.FC = () => {
                             style={{ width: `${item.percentage}%` }}
                           ></div>
                         </div>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{item.count} Paket Terumumkan</p>
+                        <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                           <span>Kategori Terdaftar</span>
+                           <span className="text-indigo-400">{item.count} Paket</span>
+                        </div>
                       </div>
                     )) : (
                       <div className="text-center py-12 flex flex-col items-center gap-3">
                          <div className="p-3 bg-slate-50 rounded-full text-slate-300">
                            <AlertCircle size={24} />
                          </div>
-                         <p className="text-sm font-medium text-slate-400 italic">Data belum tersedia</p>
+                         <p className="text-sm font-medium text-slate-400 italic">Data Penyedia belum tersedia</p>
                       </div>
                     )}
                   </div>
-                  <div className="mt-6 pt-4 border-t border-slate-100 text-center">
-                    <button onClick={() => setActiveTab('table')} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 mx-auto transition-colors">
-                      Lihat Semua Data <ChevronDown size={14} className="-rotate-90" />
-                    </button>
+                </div>
+
+                {/* SWAKELOLA Group */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-amber-500 rounded-lg text-white">
+                        <Briefcase size={20} />
+                      </div>
+                      <h3 className="text-lg font-bold text-slate-800">Distribusi Jenis Pengadaan (Swakelola)</h3>
+                    </div>
+                    <span className="text-xs font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-100">
+                      {swakelolaPackages.length} Paket Swakelola
+                    </span>
                   </div>
+                  
+                  <div className="flex-1 space-y-6">
+                    {swakelolaCategoryStats.length > 0 ? swakelolaCategoryStats.map((item) => (
+                      <div key={item.name} className="space-y-2">
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="font-bold text-slate-700">{item.name}</span>
+                          <span className="font-black text-amber-600">{item.percentage}%</span>
+                        </div>
+                        <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                          <div 
+                            className="bg-amber-500 h-full rounded-full transition-all duration-700 ease-out" 
+                            style={{ width: `${item.percentage}%` }}
+                          ></div>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                           <span>Kategori Terdaftar</span>
+                           <span className="text-amber-400">{item.count} Paket</span>
+                        </div>
+                      </div>
+                    )) : (
+                      <div className="text-center py-12 flex flex-col items-center gap-3">
+                         <div className="p-3 bg-slate-50 rounded-full text-slate-300">
+                           <AlertCircle size={24} />
+                         </div>
+                         <p className="text-sm font-medium text-slate-400 italic">Data Swakelola belum tersedia</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Jenis Pengadaan Summary Chart (Macro View) */}
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <h3 className="text-lg font-bold mb-6 text-slate-800 flex items-center gap-2">
+                  <ListFilter size={20} className="text-indigo-600" />
+                  Ringkasan Pagu per Jenis Pengadaan (Total)
+                </h3>
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={jenisPengadaanData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="name" fontSize={12} axisLine={false} tickLine={false} />
+                      <YAxis tickFormatter={(val) => `Rp${val/1000000}jt`} fontSize={10} axisLine={false} tickLine={false} />
+                      <Tooltip 
+                        formatter={(value: number) => formatCurrency(value)}
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                      />
+                      <Bar dataKey="pagu" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={40} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
 
@@ -662,55 +710,6 @@ const App: React.FC = () => {
                       <Legend verticalAlign="top" align="right" height={36}/>
                     </AreaChart>
                   </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* NEW SECTION: Wawasan Anggaran Swakelola - Summarized by procurement type percentage */}
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-amber-500 rounded-lg text-white">
-                      <Briefcase size={20} />
-                    </div>
-                    <h3 className="text-lg font-bold text-slate-800">Persentase Jenis Pengadaan (Swakelola)</h3>
-                  </div>
-                  <span className="text-xs font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-100">
-                    {swakelolaPackages.length} Paket Swakelola
-                  </span>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
-                  {swakelolaCategoryStats.length > 0 ? swakelolaCategoryStats.map((item, index) => (
-                    <div key={item.name} className="p-5 rounded-2xl bg-amber-50/30 border border-amber-100/50 space-y-3">
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <Tag size={16} className="text-amber-600" />
-                          <span className="text-sm font-bold text-slate-700">{item.name}</span>
-                        </div>
-                        <span className="text-lg font-black text-amber-600">{item.percentage}%</span>
-                      </div>
-                      <div className="w-full bg-amber-100/50 rounded-full h-3 overflow-hidden">
-                        <div 
-                          className="bg-amber-500 h-full rounded-full transition-all duration-700 ease-out shadow-sm" 
-                          style={{ width: `${item.percentage}%` }}
-                        ></div>
-                      </div>
-                      <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                        <span>Kontribusi Pengadaan</span>
-                        <span className="text-amber-700">{item.count} Paket</span>
-                      </div>
-                    </div>
-                  )) : (
-                    <div className="col-span-full py-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-300">
-                      <AlertCircle size={32} className="text-slate-300 mx-auto mb-3" />
-                      <p className="text-sm font-medium text-slate-500">Belum ada data anggaran Swakelola yang tersedia.</p>
-                    </div>
-                  )}
-                </div>
-                <div className="mt-4 pt-4 border-t border-slate-100 text-center">
-                    <button onClick={() => { setActiveTab('table'); setSelectedJenisPaket('Swakelola'); }} className="text-xs font-bold text-amber-600 hover:text-amber-800 flex items-center gap-1 mx-auto transition-colors">
-                      Eksplorasi Data Swakelola <ChevronDown size={14} className="-rotate-90" />
-                    </button>
                 </div>
               </div>
 
@@ -782,7 +781,7 @@ const App: React.FC = () => {
                 <div className="flex items-center justify-between mb-8">
                   <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                     <PieIcon size={20} className="text-emerald-600" />
-                    Distribusi Asal Anggaran Sementara: Penyedia vs Swakelola
+                    Distribusi Asal Anggaran: Penyedia vs Swakelola
                   </h3>
                   <div className="hidden sm:flex items-center gap-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                     <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-indigo-500"></div>Penyedia</div>
