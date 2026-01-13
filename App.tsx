@@ -54,7 +54,9 @@ import {
   Cell,
   Legend,
   AreaChart,
-  Area
+  Area,
+  ComposedChart,
+  Line
 } from 'recharts';
 import { GoogleGenAI } from "@google/genai";
 
@@ -656,59 +658,102 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* Jenis Pengadaan Summary Chart (Macro View) */}
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                <h3 className="text-lg font-bold mb-6 text-slate-800 flex items-center gap-2">
-                  <ListFilter size={20} className="text-indigo-600" />
-                  Ringkasan Pagu per Jenis Pengadaan (Total)
-                </h3>
-                <div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={jenisPengadaanData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis dataKey="name" fontSize={12} axisLine={false} tickLine={false} />
-                      <YAxis tickFormatter={(val) => `Rp${val/1000000}jt`} fontSize={10} axisLine={false} tickLine={false} />
-                      <Tooltip 
-                        formatter={(value: number) => formatCurrency(value)}
-                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                      />
-                      <Bar dataKey="pagu" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={40} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Tren Pengadaan Bulanan */}
+              {/* Tren Pengadaan Bulanan - Refined with Dual Y-Axis and better visual indicators */}
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <TrendingUp size={20} className="text-indigo-600" />
-                    Tren Pengadaan Bulanan
-                  </h3>
-                  <div className="flex items-center gap-4 text-xs font-medium text-slate-400">
-                     <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-indigo-500"></div>Pagu</div>
-                     <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-slate-300"></div>Trend</div>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                      <TrendingUp size={20} />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-800">Tren Pengadaan Bulanan</h3>
+                  </div>
+                  <div className="flex items-center gap-6 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                     <div className="flex items-center gap-2">
+                       <div className="w-3 h-3 rounded bg-indigo-500 opacity-20 border border-indigo-500"></div>
+                       Pagu Anggaran
+                     </div>
+                     <div className="flex items-center gap-2">
+                       <div className="w-3 h-0.5 bg-emerald-500"></div>
+                       Jumlah Paket
+                     </div>
                   </div>
                 </div>
                 <div className="h-80 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={monthlyTrendData} margin={{ top: 10, right: 30, left: 20, bottom: 5 }}>
+                    <ComposedChart data={monthlyTrendData} margin={{ top: 10, right: 20, left: 10, bottom: 5 }}>
                       <defs>
                         <linearGradient id="colorPagu" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
-                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="#6366f1" stopOpacity={0.15}/>
+                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0.02}/>
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} tickFormatter={(val) => val.substring(0, 3)} />
-                      <YAxis tickFormatter={(val) => `Rp${val/1000000}jt`} fontSize={10} axisLine={false} tickLine={false} />
-                      <Tooltip 
-                        formatter={(value: number, name: string) => [name === 'Pagu Anggaran' ? formatCurrency(value) : value, name === 'Pagu Anggaran' ? 'Total Pagu' : 'Jumlah Paket']}
-                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                      <XAxis 
+                        dataKey="name" 
+                        fontSize={11} 
+                        fontWeight={600}
+                        axisLine={false} 
+                        tickLine={false} 
+                        tickFormatter={(val) => val.substring(0, 3)} 
+                        stroke="#94a3b8"
                       />
-                      <Area type="monotone" dataKey="pagu" name="Pagu Anggaran" stroke="#4f46e5" strokeWidth={3} fillOpacity={1} fill="url(#colorPagu)" />
-                      <Legend verticalAlign="top" align="right" height={36}/>
-                    </AreaChart>
+                      <YAxis 
+                        yId="left"
+                        orientation="left"
+                        tickFormatter={(val) => `Rp${val/1000000}jt`} 
+                        fontSize={10} 
+                        fontWeight={500}
+                        axisLine={false} 
+                        tickLine={false} 
+                        stroke="#6366f1"
+                        label={{ value: 'Total Pagu', angle: -90, position: 'insideLeft', offset: -10, fontSize: 10, fill: '#6366f1', fontWeight: 700 }}
+                      />
+                      <YAxis 
+                        yId="right"
+                        orientation="right"
+                        fontSize={10} 
+                        fontWeight={500}
+                        axisLine={false} 
+                        tickLine={false} 
+                        stroke="#10b981"
+                        label={{ value: 'Jml Paket', angle: 90, position: 'insideRight', offset: 10, fontSize: 10, fill: '#10b981', fontWeight: 700 }}
+                      />
+                      <Tooltip 
+                        formatter={(value: number, name: string) => {
+                          if (name === 'pagu') return [formatCurrency(value), 'Total Pagu'];
+                          if (name === 'paket') return [value, 'Jumlah Paket'];
+                          return [value, name];
+                        }}
+                        contentStyle={{ 
+                          borderRadius: '16px', 
+                          border: 'none', 
+                          boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.1)',
+                          padding: '12px'
+                        }}
+                        itemStyle={{ fontSize: '12px', fontWeight: 600, padding: '2px 0' }}
+                        labelStyle={{ fontSize: '13px', fontWeight: 800, color: '#1e293b', marginBottom: '8px', borderBottom: '1px solid #f1f5f9', paddingBottom: '4px' }}
+                      />
+                      <Area 
+                        yId="left"
+                        type="monotone" 
+                        dataKey="pagu" 
+                        name="pagu" 
+                        stroke="#4f46e5" 
+                        strokeWidth={3} 
+                        fillOpacity={1} 
+                        fill="url(#colorPagu)" 
+                      />
+                      <Line 
+                        yId="right"
+                        type="stepAfter" 
+                        dataKey="paket" 
+                        name="paket" 
+                        stroke="#10b981" 
+                        strokeWidth={2}
+                        dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }}
+                        activeDot={{ r: 6, strokeWidth: 0 }}
+                      />
+                    </ComposedChart>
                   </ResponsiveContainer>
                 </div>
               </div>
