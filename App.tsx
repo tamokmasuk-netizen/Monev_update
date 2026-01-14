@@ -62,14 +62,14 @@ import { GoogleGenAI } from "@google/genai";
 
 // Components
 const StatCard = ({ title, value, icon: Icon, color, subValue }: any) => (
-  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 h-full">
-    <div className={`p-3 rounded-xl ${color} shrink-0`}>
-      <Icon size={24} className="text-white" />
+  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-5 h-full hover:shadow-md transition-shadow duration-300">
+    <div className={`p-4 rounded-2xl ${color} shrink-0 shadow-sm`}>
+      <Icon size={28} className="text-white" />
     </div>
     <div className="min-w-0">
-      <p className="text-sm font-medium text-slate-500 truncate" title={title}>{title}</p>
-      <h3 className="text-xl font-bold text-slate-900 truncate">{value}</h3>
-      {subValue && <p className="text-[10px] text-slate-400 font-semibold truncate mt-0.5">{subValue}</p>}
+      <p className="text-sm font-semibold text-slate-500 truncate uppercase tracking-wider mb-1" title={title}>{title}</p>
+      <h3 className="text-2xl font-black text-slate-900 truncate tracking-tight">{value}</h3>
+      {subValue && <p className="text-[10px] text-slate-400 font-bold truncate mt-1 uppercase tracking-tighter">{subValue}</p>}
     </div>
   </div>
 );
@@ -272,42 +272,23 @@ const App: React.FC = () => {
   const stats = useMemo(() => {
     if (data.length === 0) return { 
       totalPagu: 'Rp0', 
+      totalPenyedia: 'Rp0',
       totalSwakelola: 'Rp0', 
       totalPaket: 0, 
-      uniqueSatkers: 0, 
-      avgPagu: 'Rp0', 
-      avgPaguPenyedia: 'Rp0',
-      avgPaguSwakelola: 'Rp0',
-      maxPagu: 'Rp0', 
-      maxPaguSatker: '-' 
     };
     
     const penyediaData = data.filter(i => i.jenis_paket === "Penyedia");
     const swakelolaData = data.filter(i => i.jenis_paket === "Swakelola");
 
-    const totalPagu = data.reduce((sum, item) => sum + item.pagu, 0);
-    const totalSwakelola = swakelolaData.reduce((sum, item) => sum + item.pagu, 0);
-    const totalPenyedia = penyediaData.reduce((sum, item) => sum + item.pagu, 0);
+    const totalPaguValue = data.reduce((sum, item) => sum + item.pagu, 0);
+    const totalSwakelolaValue = swakelolaData.reduce((sum, item) => sum + item.pagu, 0);
+    const totalPenyediaValue = penyediaData.reduce((sum, item) => sum + item.pagu, 0);
     
-    const avgPaguPenyedia = totalPenyedia / (penyediaData.length || 1);
-    const avgPaguSwakelola = totalSwakelola / (swakelolaData.length || 1);
-    const uniqueSatkers = new Set(data.map(item => item.kd_satker)).size;
-    
-    let maxItem = data[0];
-    data.forEach(item => {
-      if (item.pagu > maxItem.pagu) maxItem = item;
-    });
-
     return {
-      totalPagu: formatCurrency(totalPagu),
-      totalSwakelola: formatCurrency(totalSwakelola),
-      totalPaket: data.length,
-      uniqueSatkers,
-      avgPagu: formatCurrency(totalPagu / (data.length || 1)),
-      avgPaguPenyedia: formatCurrency(avgPaguPenyedia),
-      avgPaguSwakelola: formatCurrency(avgPaguSwakelola),
-      maxPagu: formatCurrency(maxItem.pagu),
-      maxPaguSatker: maxItem.nama_satker
+      totalPagu: formatCurrency(totalPaguValue),
+      totalPenyedia: formatCurrency(totalPenyediaValue),
+      totalSwakelola: formatCurrency(totalSwakelolaValue),
+      totalPaket: data.length.toLocaleString('id-ID'),
     };
   }, [data]);
 
@@ -553,20 +534,39 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        <div className="p-4 md:p-8 space-y-6">
+        <div className="p-4 md:p-8 space-y-8">
           {activeTab === 'dashboard' && (
             <>
-              {/* Stats Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4 md:gap-4">
-                <div className="xl:col-span-2 lg:col-span-2 sm:col-span-2">
-                  <StatCard title="Total Pagu (Semua)" value={stats.totalPagu} icon={BarChart3} color="bg-indigo-600" />
-                </div>
-                <StatCard title="Total Swakelola" value={stats.totalSwakelola} icon={Briefcase} color="bg-amber-500" />
-                <StatCard title="Total Paket" value={stats.totalPaket} icon={FileText} color="bg-blue-500" />
-                <StatCard title="Rata-rata Penyedia" value={stats.avgPaguPenyedia} icon={Package} color="bg-indigo-400" />
-                <StatCard title="Rata-rata Swakelola" value={stats.avgPaguSwakelola} icon={Calculator} color="bg-amber-400" />
-                <StatCard title="Jumlah Satker" value={stats.uniqueSatkers} icon={TableIcon} color="bg-emerald-500" />
-                <StatCard title="Pagu Tertinggi" value={stats.maxPagu} subValue={stats.maxPaguSatker} icon={Trophy} color="bg-rose-500" />
+              {/* Stats Grid Simplified to 4 Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <StatCard 
+                  title="Total Pagu" 
+                  value={stats.totalPagu} 
+                  icon={BarChart3} 
+                  color="bg-indigo-600" 
+                  subValue="Seluruh Anggaran RUP"
+                />
+                <StatCard 
+                  title="Total RUP Penyedia" 
+                  value={stats.totalPenyedia} 
+                  icon={Package} 
+                  color="bg-blue-600" 
+                  subValue="Skema Pengadaan Penyedia"
+                />
+                <StatCard 
+                  title="Total RUP Swakelola" 
+                  value={stats.totalSwakelola} 
+                  icon={Briefcase} 
+                  color="bg-amber-500" 
+                  subValue="Skema Pengadaan Swakelola"
+                />
+                <StatCard 
+                  title="Total Paket" 
+                  value={stats.totalPaket} 
+                  icon={FileText} 
+                  color="bg-emerald-600" 
+                  subValue="Jumlah Keseluruhan Paket"
+                />
               </div>
 
               {/* Grouped PROCUREMENT TYPE Distribution (Side-by-Side) */}
@@ -575,12 +575,12 @@ const App: React.FC = () => {
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
                   <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-indigo-600 rounded-lg text-white">
+                      <div className="p-2 bg-blue-600 rounded-lg text-white">
                         <Package size={20} />
                       </div>
                       <h3 className="text-lg font-bold text-slate-800">Distribusi Jenis Pengadaan (Penyedia)</h3>
                     </div>
-                    <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+                    <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
                       {penyediaPackages.length} Paket Penyedia
                     </span>
                   </div>
@@ -590,17 +590,17 @@ const App: React.FC = () => {
                       <div key={item.name} className="space-y-2">
                         <div className="flex justify-between items-center text-sm">
                           <span className="font-bold text-slate-700">{item.name}</span>
-                          <span className="font-black text-indigo-600">{item.percentage}%</span>
+                          <span className="font-black text-blue-600">{item.percentage}%</span>
                         </div>
                         <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
                           <div 
-                            className="bg-indigo-500 h-full rounded-full transition-all duration-700 ease-out" 
+                            className="bg-blue-500 h-full rounded-full transition-all duration-700 ease-out" 
                             style={{ width: `${item.percentage}%` }}
                           ></div>
                         </div>
                         <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                            <span>Kategori Terdaftar</span>
-                           <span className="text-indigo-400">{item.count} Paket</span>
+                           <span className="text-blue-400">{item.count} Paket</span>
                         </div>
                       </div>
                     )) : (
@@ -658,7 +658,7 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* Tren Pengadaan Bulanan - Refined with Dual Y-Axis and better visual indicators */}
+              {/* Tren Pengadaan Bulanan */}
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
@@ -758,7 +758,73 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* Pagu Distribution Charts */}
+              {/* NEW: Grafik Batang Baru Pagu per Metode Pengadaan */}
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-rose-50 rounded-lg text-rose-600">
+                      <Gavel size={20} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-800">Analisis Pagu per Metode Pengadaan</h3>
+                      <p className="text-xs text-slate-400 font-medium">Distribusi anggaran berdasarkan mekanisme pengadaan yang digunakan</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="h-80 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={metodePengadaanData} margin={{ top: 20, right: 20, left: 10, bottom: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis 
+                        dataKey="name" 
+                        fontSize={10} 
+                        fontWeight={700}
+                        axisLine={false} 
+                        tickLine={false}
+                        interval={0}
+                        angle={-15}
+                        textAnchor="end"
+                        height={60}
+                        stroke="#64748b"
+                      />
+                      <YAxis 
+                        tickFormatter={(val) => `Rp${val/1000000}jt`} 
+                        fontSize={10} 
+                        fontWeight={600}
+                        axisLine={false} 
+                        tickLine={false}
+                        stroke="#64748b"
+                      />
+                      <Tooltip 
+                        formatter={(value: number) => [formatCurrency(value), 'Total Pagu']}
+                        contentStyle={{ 
+                          borderRadius: '12px', 
+                          border: 'none', 
+                          boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                          backgroundColor: '#1e293b',
+                          color: '#fff'
+                        }}
+                        itemStyle={{ color: '#818cf8', fontWeight: 'bold' }}
+                        labelStyle={{ color: '#fff', fontWeight: 'bold', marginBottom: '4px' }}
+                        cursor={{ fill: '#f1f5f9', opacity: 0.4 }}
+                      />
+                      <Bar 
+                        dataKey="pagu" 
+                        fill="#6366f1" 
+                        radius={[6, 6, 0, 0]} 
+                        barSize={50}
+                        animationDuration={1500}
+                      >
+                         {metodePengadaanData.map((entry, index) => (
+                          <Cell key={`cell-metode-${index}`} fill={index % 2 === 0 ? '#6366f1' : '#818cf8'} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Pagu Distribution Charts (Pie) */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                   <h3 className="text-lg font-bold mb-6 text-slate-800 flex items-center gap-2">
@@ -800,12 +866,12 @@ const App: React.FC = () => {
 
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                   <h3 className="text-lg font-bold mb-6 text-slate-800 flex items-center gap-2">
-                    <Gavel size={20} className="text-rose-500" />
-                    Pagu per Metode Pengadaan
+                    <Tag size={20} className="text-indigo-600" />
+                    Pagu per Jenis Pengadaan
                   </h3>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={metodePengadaanData} layout="vertical" margin={{ left: 20, right: 40, top: 10, bottom: 10 }}>
+                      <BarChart data={jenisPengadaanData} layout="vertical" margin={{ left: 20, right: 40, top: 10, bottom: 10 }}>
                         <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
                         <XAxis type="number" hide />
                         <YAxis type="category" dataKey="name" fontSize={10} axisLine={false} tickLine={false} width={120} />
@@ -814,7 +880,7 @@ const App: React.FC = () => {
                           contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                           cursor={{ fill: '#f8fafc' }}
                         />
-                        <Bar dataKey="pagu" fill="#f43f5e" radius={[0, 4, 4, 0]} />
+                        <Bar dataKey="pagu" fill="#6366f1" radius={[0, 4, 4, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
