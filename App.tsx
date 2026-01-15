@@ -36,7 +36,11 @@ import {
   Briefcase,
   Calculator,
   ListFilter,
-  ArrowRight
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
 } from 'lucide-react';
 import { INITIAL_DATA } from './constants';
 import { RUPData } from './types';
@@ -224,11 +228,20 @@ const App: React.FC = () => {
   const [notification, setNotification] = useState<{ message: string, type: 'success' | 'info' } | null>(null);
   const [selectedPacket, setSelectedPacket] = useState<RUPData | null>(null);
   
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
   // Sorting state
   const [sortConfig, setSortConfig] = useState<{ key: keyof RUPData | null, direction: 'asc' | 'desc' | null }>({
     key: null,
     direction: null
   });
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedSatker, selectedJenisPaket, selectedMetode, minPagu, maxPagu]);
 
   // Derived data with filtering AND sorting
   const filteredAndSortedData = useMemo(() => {
@@ -268,6 +281,14 @@ const App: React.FC = () => {
 
     return result;
   }, [data, searchTerm, selectedSatker, selectedJenisPaket, selectedMetode, minPagu, maxPagu, sortConfig]);
+
+  // Paginated Data
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    return filteredAndSortedData.slice(startIndex, startIndex + rowsPerPage);
+  }, [filteredAndSortedData, currentPage, rowsPerPage]);
+
+  const totalPages = Math.ceil(filteredAndSortedData.length / rowsPerPage);
 
   const stats = useMemo(() => {
     if (data.length === 0) return { 
@@ -1035,7 +1056,7 @@ const App: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white">
-                    {filteredAndSortedData.map((item, index) => (
+                    {paginatedData.map((item, index) => (
                       <tr 
                         key={item.kd_rup} 
                         className={`hover:bg-indigo-50/90 transition-all group cursor-pointer border-l-4 border-l-transparent hover:border-l-indigo-600 ${index % 2 === 1 ? 'bg-slate-50' : 'bg-white'}`} 
@@ -1063,6 +1084,73 @@ const App: React.FC = () => {
                     ))}
                   </tbody>
                 </table>
+              </div>
+              
+              {/* Pagination Controls */}
+              <div className="p-6 border-t border-slate-100 bg-white flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-slate-500 font-medium whitespace-nowrap">
+                    Menampilkan <span className="font-bold text-slate-900">{filteredAndSortedData.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0}</span> - <span className="font-bold text-slate-900">{Math.min(currentPage * rowsPerPage, filteredAndSortedData.length)}</span> dari <span className="font-bold text-slate-900">{filteredAndSortedData.length}</span> data
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Baris:</span>
+                    <select 
+                      className="bg-slate-50 border border-slate-200 py-1 px-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-bold"
+                      value={rowsPerPage}
+                      onChange={(e) => {
+                        setRowsPerPage(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <option value={10}>10</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button 
+                    onClick={() => setCurrentPage(1)} 
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    title="Halaman Pertama"
+                  >
+                    <ChevronsLeft size={18} />
+                  </button>
+                  <button 
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    title="Halaman Sebelumnya"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  
+                  <div className="flex items-center px-4">
+                    <span className="text-sm font-bold text-slate-700">
+                      Halaman <span className="text-indigo-600">{currentPage}</span> / <span className="text-slate-400">{totalPages || 1}</span>
+                    </span>
+                  </div>
+
+                  <button 
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} 
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    title="Halaman Berikutnya"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                  <button 
+                    onClick={() => setCurrentPage(totalPages)} 
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    title="Halaman Terakhir"
+                  >
+                    <ChevronsRight size={18} />
+                  </button>
+                </div>
               </div>
             </div>
           )}
