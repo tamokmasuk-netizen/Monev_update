@@ -5,11 +5,13 @@ export interface RUPData {
   asal_dana_satker: string;
   jenis_klpd: string;
   kd_kegiatan?: number;
+  kd_klpd?: string;
   kd_rup: number;
   kd_satker: number;
   kd_satker_str: string;
   kd_subkegiatan?: number;
   mak: string;
+  mak_rekening_kegiatan?: string;
   nama_paket: string;
   nama_klpd: string;
   nama_satker: string;
@@ -25,7 +27,7 @@ export interface RUPData {
   metode_pengadaan?: string;
   volume_pekerjaan?: string;
   spesifikasi_pekerjaan?: string;
-  jenis_pengadaan?: string; // New field for procurement category
+  jenis_pengadaan?: string;
 }
 
 export interface DashboardStats {
